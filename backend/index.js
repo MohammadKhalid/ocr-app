@@ -5,7 +5,7 @@ const fs = require('fs');
 const bodyParser = require('body-parser');
 var add_data = require('./api/CRUD/index.js');
 var Tesseract = require('tesseract.js');
-
+const path = require("path");
 //middlewares
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
@@ -41,6 +41,7 @@ app.post('/upload', (req, res) => {
         }
 
         var image = fs.readFileSync(
+
             __dirname + '/images/' + req.file.originalname,
             {
                 encoding: null
@@ -52,10 +53,8 @@ app.post('/upload', (req, res) => {
 
         Tesseract.recognize(image)
             .progress(function (p) {
-                console.log('progress', p);
             })
             .then(function (result) {
-                // res.send(result.html);
                 let text = result.text;
 
                 const newText = text.split(/\s/).join(' ');
@@ -69,11 +68,10 @@ app.post('/upload', (req, res) => {
                 if (date != undefined && date != null && date.length > 0) {
                     date = date.toString()
                 }
-
-
+                var newTextT = text.replace(/'/g, "^")
                 var obj = {
-                    image: image,
-                    data: text,
+                    image: req.file.originalname,
+                    data: newTextT,
                     dates: date,
                     currencys: currency
                 }
@@ -84,7 +82,10 @@ app.post('/upload', (req, res) => {
             });
     });
 });
-app.get('/showdata', (req, res) => { });
+app.get("/showdata/:id", (req, res) => {
+    res.set({ 'Content-Type': 'image/png' });
+    res.sendFile(path.join(__dirname, "./images/" + req.params.id));
+});
 app.use('/api/add/', add_data);
 app.listen(PORT, () => {
     console.log(`Server running on Port ${PORT}`);

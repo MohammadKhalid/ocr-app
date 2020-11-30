@@ -1,6 +1,9 @@
 .App {
   text-align: center;
 }
+body{
+  background-color: #F2F2F2;
+}
 
 .App-logo {
   height: 40vmin;
@@ -38,6 +41,10 @@
 }
 
 
+.coll{
+  color: #f2f2f2;
+}
+
 .app {
   display: grid;
   grid-template-columns: auto auto auto auto;
@@ -53,7 +60,60 @@
   text-align: center;
   padding: 24px;
 }
-
+.uploadFile {
+  overflow: hidden;
+  display: block;
+  position: relative;
+  color: #777777;
+  padding: 30px 100px;
+  margin-bottom: 20px;
+  border: 2px dashed #fff;
+  border-radius: 8px;
+  background-color: #007bff; 
+}
+.center-icon-n{
+  text-align: center;
+}
+.center-icon-n + p{
+  text-align: center;
+  color: #fff;
+}
+i.fa.fa-cloud-upload {
+  font-size: 90px;
+  color: #fff;
+  display: block;
+}
+.file-field {
+  position: relative;
+  position: relative;
+  margin: 0px auto;
+  display: block;
+  width: 150px;
+}
+.btn-light{
+  width: 100%;
+  cursor: pointer;
+}
+.btn-success{
+  margin: 0px auto;
+  display: block;
+  width: 150px;
+  float: none!important;
+  margin-top: 25px!important;
+}
+.file-field input[type="file"] {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  filter: alpha(opacity=0);
+  opacity: 0;
+}
 .hero {
   grid-column-start: 1;
   grid-column-end: 5;
@@ -77,12 +137,16 @@
   margin: 0;
   position: absolute;
   top: 50%;
-  left: 40%;
+  max-width: 800px;
+  width: 100%;
+  text-align: center;
 
 }
 .container1 {
   height: 40px;
   position: relative;
+  justify-content: center;
+  display: flex;
 }
 .fileUploaderContainer {
   overflow: hidden;

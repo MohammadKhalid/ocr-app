@@ -5,9 +5,10 @@ import axios from 'axios';
 import {
   Button,
   ListGroup,
-  Container, Modal, ModalHeader, ModalBody, ModalFooter, Form, FormGroup, Label, Input, FormText, Table
+  Container, Modal, ModalHeader, ModalBody, ModalFooter, Form, FormGroup, Label, Input, FormText, Table, Progress
 } from 'reactstrap';
 
+import upload from './images/upload.png';
 class App extends Component {
   constructor(props) {
     super(props)
@@ -20,15 +21,26 @@ class App extends Component {
       modaldata: '',
       modaldate: '',
       modalcurrency: '',
-      editItem: ''
+      editItem: '',
+      isUpload: false,
+      isselected: false,
+      selected: '',
+      progress: 0,
     };
     this.submit = this.submit.bind(this);
     this.toggle = this.toggle.bind(this);
+    this.selected = this.selected.bind(this);
     this.modaldata = this.modaldata.bind(this);
     this.modaldate = this.modaldate.bind(this);
     this.modalcurrency = this.modalcurrency.bind(this);
     this.update = this.update.bind(this);
     this.isEdit = this.isEdit.bind(this);
+  }
+  selected = () => {
+    this.setState({
+      isselected: !this.state.isselected
+    })
+
   }
   modaldata(ev) {
     this.setState({
@@ -48,7 +60,6 @@ class App extends Component {
     })
   }
   isEdit = (val) => {
-    console.log("val", val);
     this.setState({
       modaldata: val.data,
       modaldate: val.date,
@@ -110,47 +121,80 @@ class App extends Component {
   submit(event) {
     event.preventDefault();
     const data = new FormData();
-    data.append('image', this.uploadInput.files[0]);
-    axios.post('http://localhost:5000/upload', data)
-      .then(res => {
-        console.log("result userimage", res.data);
-        const data = new FormData();
-        data.append('image', this.uploadInput.files[0]);
+    if (this.uploadInput.files[0] == undefined) {
+      alert("plz select Image ");
 
-        var datas = res.data.data;
-        var dates = res.data.dates;
-        var currencys = res.data.currencys;
-        var obj = {
-          image: data,
-          datas: datas,
-          dates: dates,
-          currencys: currencys
-
-        }
-        console.log("obj", obj);
-        console.log("data", data.get('image'));
-        axios.post('http://localhost:5000/api/add/', obj)
-          .then(ress => {
-            console.log("Res", res);
-          })
-        this.getData();
+    }
+    if (this.state.isUpload) {
+      alert("plz wait image processing ")
+      return
+    }
+    else {
+      this.setState({
+        isUpload: true
       })
+      data.append('image', this.uploadInput.files[0]);
+      axios.post('http://localhost:5000/upload', data, {
+        onUploadProgress: ProgressEvent => {
+          console.log("ProgressEvent.loaded ", ProgressEvent.loaded);
+          console.log("ProgressEvent.total ", ProgressEvent.total);
+          this.setState({
+            progress: (ProgressEvent.loaded / ProgressEvent.total * 100),
+          })
+        }
+      })
+        // setProgress(Math.round((100 * event.loaded) / event.total));
+        .then(res => {
+          const data = new FormData();
+          data.append('image', this.uploadInput.files[0]);
+          var datas = res.data.data;
+          var dates = res.data.dates;
+          var currencys = res.data.currencys;
+          var obj = {
+            image: res.data.image,
+            datas: datas,
+            dates: dates,
+            currencys: currencys
+
+          }
+          axios.post('http://localhost:5000/api/add/', obj)
+            .then(ress => {
+              console.log("Res", res);
+              this.setState({
+                isUpload: false,
+                progress: 0
+              })
+              console.log("this.uploadInput", this.uploadInput)
+
+              // this.uploadInput.value = undefined
+              this.uploadInput = '';
+              this.getData();
+            })
+        })
+    }
   }
 
   stringIsEmpty = (str) => {
     return (!str || /^\s*$/.test(str));
   };
 
+  selectedItem = (item) => {
+    this.setState({
+      selected: item
+    })
+    this.selected()
+  }
+
   render() {
     return (
       <div className="container-fluid">
         <Modal isOpen={this.state.isModal} toggle={this.toggle} className={this.props.className}>
-          <ModalHeader toggle={this.toggle}>Add /Edit Item List</ModalHeader>
+          <ModalHeader style={{ background: "#007bff", color: "#f2f2f2" }} toggle={this.toggle}>Edit Item</ModalHeader>
           <ModalBody>
             <Form>
               <FormGroup>
                 <Label for="exampleEmail">Text </Label>
-                <Input type="text" name="modaldata" id="name" value={this.state.modaldata} onChange={this.modaldata} />
+                <Input type="textarea" rows="4" cols="50" name="modaldata" id="name" value={this.state.modaldata} onChange={this.modaldata} />
                 <Label for="exampleEmail">Date</Label>
                 <Input type="text" name="modaldate" id="price" value={this.state.modaldate} onChange={this.modaldate} />
 
@@ -168,54 +212,83 @@ class App extends Component {
             <Button color="secondary" onClick={this.toggle}>Cancel</Button>
           </ModalFooter>
         </Modal>
+
+        <Modal isOpen={this.state.isselected} toggle={this.selected} className=".modal-xl">
+          <ModalHeader style={{ background: "#007bff", color: "#f2f2f2" }} toggle={this.selected}>View Image and Text</ModalHeader>
+          <ModalBody>
+            <Form>
+              <div className="container column">
+                <div className="">
+                  <img className="" style={{ width: '100%', borderStyle: 'solid', borderWidth: 1, borderColor: "#d2d2d2" }} src={'http://localhost:5000/showdata/' + this.state.selected.image} />
+                </div>
+                <div className="">
+                  <p>{(this.state.selected.data != null && this.state.selected.data != 'null' && this.state.selected.data != undefined) ? this.state.selected.data.replaceAll('^', "'") : "-"}</p>
+                </div>
+              </div>
+            </Form>
+          </ModalBody>
+        </Modal>
         <div className="container-fluid mt-2">
           <div className="container1">
-            <div className="vertical-center">
-              <form class="md-form">
-                <div class="file-field">
-                  <div class="btn btn-outline-primary btn-sm float-left">
+            <div className="vertical-center uploadFile alert-primary" >
 
-                    <input ref={(ref) => { this.uploadInput = ref; }} type="file" name="uploaded_image" accept="" />
+              <div className="center-icon-n">  <i className="fa fa-cloud-upload" aria-hidden="true"></i></div>
+              <p>Drag and drop your file here </p>
 
-                  </div>
+              <div className="file-field">
 
+                <div className="btn btn-light btn-sm float-left waves-effect waves-light">
+                  <span>SELECT FILE</span>
+                  <input ref={(ref) => { this.uploadInput = ref; }} type="file" name="uploaded_image" accept="" />
                 </div>
 
-              </form>
-              <button class="btn btn-outline-success mt-2 float-right" onClick={this.submit}>Upload</button>
+
+              </div>
+              <br />
+              <br />
+
+              {this.state.progress > 0 &&
+                <Progress max="100" color="success" value={this.state.progress} >{Math.round(this.state.progress, 2)}%</Progress>
+              }
+              <button class="btn btn-success mt-2 float-right" onClick={this.submit}>Upload</button>
             </div>
+
           </div>
 
         </div>
 
-        <div className="container-fluid " style={{ marginTop: 100 }}>
-          <table className="table">
-            <thead className="thead-dark">
-              <tr>
-                <th scope="col">#</th>
-                <th scope="col">Image</th>
-                <th scope="col">Text</th>
-                <th scope="col">Date</th>
-                <th scope="col">Currency</th>
-                <th scope="col">Edit</th>
-                <th scope="col">Delete</th>
+        <div className="container-fluid " style={{ marginTop: 350 }}>
+          <table className="table table-striped table-hover">
+            <thead className="" style={{ background: "#007bff" }}>
+              <tr style={{ color: "#f2f2f2" }}>
+                <th scope="coll">#</th>
+                <th scope="coll">Image</th>
+                <th scope="coll">Text</th>
+                <th scope="coll">Date</th>
+                <th scope="coll">Currency</th>
+                <th scope="coll">Edit</th>
+                <th scope="coll">Delete</th>
               </tr>
             </thead>
             <tbody>
-              {this.state.tableData.map((item, index) => {
-                return (
-                  <tr>
-                    <th scope="row">{index + 1}</th>
-                    <td>Image</td>
-                    <td>{(item.data != null && item.data != 'null'  && item.data != undefined  ) ? item.data : "-"}</td>
-                    <td>{(item.date != null  && item.date != 'null' && item.date != undefined) ? item.date : "-"}</td>
-                    <td>{(item.currency != null && item.currency != 'null' && item.currency != undefined) ? item.currency : "-"}</td>
+              {this.state.tableData.length > 0 &&
+                this.state.tableData.map((item, index) => {
+                  return (
+                    <tr >
+                      <th scope="row">{index + 1}</th>
+                      <td onClick={() => this.selectedItem(item)}>< img src={'http://localhost:5000/showdata/' + item.image}
+                        className="img-fluid img-thumbnail"
+                        // className="img-thumbnail"
+                        alt="img" /></td>
+                      <td style={{maxWidth:450}} onClick={() => this.selectedItem(item)}>{(item.data != null && item.data != 'null' && item.data != undefined) ? item.data.replaceAll('^', "'") : "-"}</td>
+                      <td  style={{minWidth:200}} onClick={() => this.selectedItem(item)}>{(item.date != null && item.date != 'null' && item.date != undefined) ? item.date.split(",").map((val, index) => <p>{val}</p>) : "-"}</td>
+                      <td onClick={() => this.selectedItem(item)}>{(item.currency != null && item.currency != 'null' && item.currency != undefined) ? item.currency.split(",").map((val, index) => <p>{val}</p>) : "-"}</td>
 
-                    <td><button onClick={() => this.isEdit(item)} className="btn btn-sm btn-outline-warning">Edit</button></td>
-                    <td><button onClick={() => this.onDelete(item)} className="btn btn-sm btn-outline-danger">Delete</button></td>
-                  </tr>
-                )
-              })}
+                      <td style={{ zIndex: 2 }}><button onClick={() => this.isEdit(item)} className="btn btn-sm btn-outline-warning">Edit</button></td>
+                      <td style={{ zIndex: 2 }}><button onClick={() => this.onDelete(item)} className="btn btn-sm btn-outline-danger">Delete</button></td>
+                    </tr>
+                  )
+                })}
 
             </tbody>
           </table>
