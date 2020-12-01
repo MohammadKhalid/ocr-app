@@ -5,7 +5,7 @@ import axios from 'axios';
 import {
   Button,
   ListGroup,
-  Container, Modal, ModalHeader, ModalBody, ModalFooter, Form, FormGroup, Label, Input, FormText, Table, Progress
+  Container, Modal, ModalHeader, ModalBody, ModalFooter, Form, FormGroup, Label, Input, FormText, Table, Progress, Spinner
 } from 'reactstrap';
 
 import upload from './images/upload.png';
@@ -25,9 +25,10 @@ class App extends Component {
       isUpload: false,
       isselected: false,
       selected: '',
-      progress: 0,
+      progress: false,
+      uploadFile: "",
     };
-    this.submit = this.submit.bind(this);
+    // this.submit = this.submit.bind(this);
     this.toggle = this.toggle.bind(this);
     this.selected = this.selected.bind(this);
     this.modaldata = this.modaldata.bind(this);
@@ -118,10 +119,28 @@ class App extends Component {
   componentDidMount() {
     this.getData();
   }
-  submit(event) {
+
+
+  stringIsEmpty = (str) => {
+    return (!str || /^\s*$/.test(str));
+  };
+
+  selectedItem = (item) => {
+    this.setState({
+      selected: item
+    })
+    this.selected()
+  }
+
+  onChangeHandler = (event) => {
     event.preventDefault();
+    this.setState({
+      uploadFile: event.target.files[0].name,
+
+    })
+
     const data = new FormData();
-    if (this.uploadInput.files[0] == undefined) {
+    if (event.target.files[0] == undefined) {
       alert("plz select Image ");
 
     }
@@ -131,22 +150,14 @@ class App extends Component {
     }
     else {
       this.setState({
-        isUpload: true
+        isUpload: true,
+        progress: true
       })
-      data.append('image', this.uploadInput.files[0]);
+      data.append('image', event.target.files[0]);
       axios.post('http://localhost:5000/upload', data, {
-        onUploadProgress: ProgressEvent => {
-          console.log("ProgressEvent.loaded ", ProgressEvent.loaded);
-          console.log("ProgressEvent.total ", ProgressEvent.total);
-          this.setState({
-            progress: (ProgressEvent.loaded / ProgressEvent.total * 100),
-          })
-        }
-      })
-        // setProgress(Math.round((100 * event.loaded) / event.total));
+       })
         .then(res => {
-          const data = new FormData();
-          data.append('image', this.uploadInput.files[0]);
+
           var datas = res.data.data;
           var dates = res.data.dates;
           var currencys = res.data.currencys;
@@ -162,29 +173,15 @@ class App extends Component {
               console.log("Res", res);
               this.setState({
                 isUpload: false,
-                progress: 0
+                progress: false,
+                uploadFile: '',
               })
-              console.log("this.uploadInput", this.uploadInput)
 
-              // this.uploadInput.value = undefined
-              this.uploadInput = '';
               this.getData();
             })
         })
     }
   }
-
-  stringIsEmpty = (str) => {
-    return (!str || /^\s*$/.test(str));
-  };
-
-  selectedItem = (item) => {
-    this.setState({
-      selected: item
-    })
-    this.selected()
-  }
-
   render() {
     return (
       <div className="container-fluid">
@@ -238,8 +235,9 @@ class App extends Component {
               <div className="file-field">
 
                 <div className="btn btn-light btn-sm float-left waves-effect waves-light">
-                  <span>SELECT FILE</span>
-                  <input ref={(ref) => { this.uploadInput = ref; }} type="file" name="uploaded_image" accept="" />
+                  <span>{(this.state.uploadFile != '') ? this.state.uploadFile : "SELECT FILE"}</span>
+
+                  <input onChange={this.onChangeHandler} type="file" name="uploaded_image" accept="" />
                 </div>
 
 
@@ -247,10 +245,9 @@ class App extends Component {
               <br />
               <br />
 
-              {this.state.progress > 0 &&
-                <Progress max="100" color="success" value={this.state.progress} >{Math.round(this.state.progress, 2)}%</Progress>
+              {this.state.progress &&
+                <div className="loader file-field"></div>
               }
-              <button class="btn btn-success mt-2 float-right" onClick={this.submit}>Upload</button>
             </div>
 
           </div>
@@ -280,8 +277,8 @@ class App extends Component {
                         className="img-fluid img-thumbnail"
                         // className="img-thumbnail"
                         alt="img" /></td>
-                      <td style={{maxWidth:450}} onClick={() => this.selectedItem(item)}>{(item.data != null && item.data != 'null' && item.data != undefined) ? item.data.replaceAll('^', "'") : "-"}</td>
-                      <td  style={{minWidth:200}} onClick={() => this.selectedItem(item)}>{(item.date != null && item.date != 'null' && item.date != undefined) ? item.date.split(",").map((val, index) => <p>{val}</p>) : "-"}</td>
+                      <td style={{ maxWidth: 450 }} onClick={() => this.selectedItem(item)}>{(item.data != null && item.data != 'null' && item.data != undefined) ? item.data.replaceAll('^', "'") : "-"}</td>
+                      <td style={{ minWidth: 200 }} onClick={() => this.selectedItem(item)}>{(item.date != null && item.date != 'null' && item.date != undefined) ? item.date.split(",").map((val, index) => <p>{val}</p>) : "-"}</td>
                       <td onClick={() => this.selectedItem(item)}>{(item.currency != null && item.currency != 'null' && item.currency != undefined) ? item.currency.split(",").map((val, index) => <p>{val}</p>) : "-"}</td>
 
                       <td style={{ zIndex: 2 }}><button onClick={() => this.isEdit(item)} className="btn btn-sm btn-outline-warning">Edit</button></td>
